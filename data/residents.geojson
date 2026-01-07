@@ -1,0 +1,80 @@
+{
+  "type": "FeatureCollection",
+  "generator": "overpass-turbo",
+  "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL.",
+  "timestamp": "2026-01-07T09:59:59Z",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3726033230",
+        "addr:city": "长沙",
+        "addr:housenumber": "221号",
+        "addr:postcode": "410082",
+        "addr:street": "阜埠河路",
+        "building": "apartments",
+        "entrance": "yes",
+        "foot": "yes",
+        "name": "湖南大学天马学生公寓"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.9403805,
+          28.1713765
+        ]
+      },
+      "id": "node/3726033230"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8532774977",
+        "alt_name": "Yuelu Subdistrict;岳麓",
+        "capital": "8",
+        "name": "岳麓街道",
+        "name:en": "Yuelu",
+        "name:zh": "岳麓街道",
+        "official_name": "岳麓街道",
+        "place": "suburb",
+        "place:CN": "subdistrict",
+        "source:name": "GNS",
+        "wikidata": "Q11050929",
+        "wikipedia": "zh:岳麓街道"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.9241872,
+          28.1641497
+        ]
+      },
+      "id": "node/8532774977"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8532774980",
+        "alt_name": "Juzizhou Subdistrict;桔子洲",
+        "capital": "8",
+        "name": "桔子洲街道",
+        "name:en": "Juzizhou",
+        "name:zh": "桔子洲街道",
+        "official_name": "桔子洲街道",
+        "place": "suburb",
+        "place:CN": "subdistrict",
+        "source:name": "GNS",
+        "wikidata": "Q11113275",
+        "wikipedia": "zh:桔子洲街道"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.945844,
+          28.1682828
+        ]
+      },
+      "id": "node/8532774980"
+    }
+  ]
+}

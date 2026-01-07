@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>公共服务设施空间分析系统</title>
+
+  <!-- Leaflet 样式 -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <!-- 自定义样式 -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- 地图容器 -->
+  <div id="map"></div>
+
+  <!-- 设施分类统计 -->
+  <div id="stats">
+    <h3>公共设施分类统计</h3>
+    <table id="statsTable">
+      <thead>
+        <tr>
+          <th>设施类型</th>
+          <th>数量</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- 图层管理面板（只放 checkbox） -->
+  <div id="layerControl" style="
+    position:absolute;
+    top:10px;
+    right:10px;
+    background:#fff;
+    padding:8px;
+    border:1px solid #ccc;
+    z-index:999;
+    font-size:14px;
+  ">
+    <b>图层管理</b><br/>
+
+    <label>
+      <input type="checkbox" id="chkFacility" checked>
+      公共设施
+    </label><br/>
+
+    <label>
+      <input type="checkbox" id="chkBuffer" checked>
+      医疗服务区
+    </label><br/>
+
+    <label>
+      <input type="checkbox" id="chkResident" checked>
+      覆盖盲区居民点
+    </label>
+  </div>
+
+  <!-- 分析与编辑工具面板 -->
+  <div id="toolPanel" style="
+    position:absolute;
+    top:10px;
+    right:170px;
+    background:#fff;
+    padding:10px;
+    border:1px solid #ccc;
+    z-index:999;
+    font-size:14px;
+    line-height:1.6;
+  ">
+    <b>分析与编辑</b>
+    <hr/>
+
+    <b>缓冲区分析</b><br/>
+    <label>
+      缓冲距离：
+      <select id="bufferDistance">
+        <option value="500">500 m</option>
+        <option value="1000" selected>1000 m</option>
+        <option value="1500">1500 m</option>
+      </select>
+    </label>
+    <br/>
+    <button id="btnRunBuffer">重新分析</button>
+
+    <hr/>
+
+    <b>设施管理</b><br/>
+    <button id="btnAddFacility">新增设施</button>
+    <button id="btnEditFacility">编辑设施</button>
+    <button id="btnDeleteFacility">删除设施</button>
+
+    <p style="font-size:12px;color:#666;">
+      操作说明：先点击设施点，再选择编辑或删除
+    </p>
+  </div>
+
+  <!-- 覆盖分析结果面板 -->
+  <div id="resultPanel" style="
+    position:absolute;
+    bottom:10px;
+    left:10px;
+    background:#fff;
+    padding:10px;
+    border:1px solid #ccc;
+    z-index:999;
+    font-size:14px;
+    min-width:220px;
+  ">
+    <b>覆盖分析结果</b>
+    <hr/>
+    <div>覆盖居民点数量：<span id="coveredCount">0</span></div>
+    <div>未覆盖居民点数量：<span id="uncoveredCount">0</span></div>
+    <div>覆盖人口总数：<span id="coveredPopulation">0</span></div>
+    <hr/>
+
+  <!-- 统计图表 -->
+  <canvas id="coverageChart" width="220" height="220"></canvas>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- 主逻辑 -->
+  <script src="js/main.js"></script>
+</body>
+</html>
+
+

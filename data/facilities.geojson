@@ -1,0 +1,272 @@
+{
+  "type": "FeatureCollection",
+  "generator": "overpass-turbo",
+  "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL.",
+  "timestamp": "2026-01-07T09:32:30Z",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3133310982",
+        "amenity": "clinic",
+        "name": "湖南大学医院天马保健所"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.939411,
+          28.1689439
+        ]
+      },
+      "id": "node/3133310982"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3184256906",
+        "amenity": "community_centre",
+        "name": "新学生事务大厅"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.9399503,
+          28.1707453
+        ]
+      },
+      "id": "node/3184256906"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3188074334",
+        "amenity": "toilets"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.9478301,
+          28.1755621
+        ]
+      },
+      "id": "node/3188074334"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3860139781",
+        "leisure": "sports_centre",
+        "name": "新校体育场"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.9286506,
+          28.1568223
+        ]
+      },
+      "id": "node/3860139781"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3862417144",
+        "amenity": "school",
+        "name": "文志艺术学校"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.935897,
+          28.1592699
+        ]
+      },
+      "id": "node/3862417144"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4394560094",
+        "amenity": "toilets"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.9325089,
+          28.184123
+        ]
+      },
+      "id": "node/4394560094"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4394560095",
+        "amenity": "toilets"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.929042,
+          28.1828378
+        ]
+      },
+      "id": "node/4394560095"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4394597490",
+        "amenity": "toilets"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.9269648,
+          28.1873106
+        ]
+      },
+      "id": "node/4394597490"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5714680268",
+        "amenity": "pharmacy",
+        "dispensing": "yes",
+        "healthcare": "pharmacy",
+        "name": "千金大药房"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.9273287,
+          28.1668719
+        ]
+      },
+      "id": "node/5714680268"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5724482046",
+        "amenity": "hospital",
+        "healthcare": "hospital",
+        "name": "升华公寓医务室"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.9308347,
+          28.1615004
+        ]
+      },
+      "id": "node/5724482046"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6910885076",
+        "leisure": "park",
+        "name": "何润公园",
+        "operator": "何润"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.9451174,
+          28.1670086
+        ]
+      },
+      "id": "node/6910885076"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9299427901",
+        "amenity": "pharmacy",
+        "dispensing": "yes",
+        "healthcare": "pharmacy",
+        "name": "养天和大药房",
+        "name:en": "Tianhe Pharmacy",
+        "name:zh": "养天和大药房"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.9350219,
+          28.1701685
+        ]
+      },
+      "id": "node/9299427901"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9491091572",
+        "amenity": "police",
+        "name": "中南大学保卫处南校区保卫科",
+        "operator": "中南大学"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.9324056,
+          28.1633125
+        ]
+      },
+      "id": "node/9491091572"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10020233824",
+        "addr:city": "长沙市",
+        "addr:district": "岳麓区",
+        "addr:province": "湖南省",
+        "amenity": "library",
+        "name": "岳麓图书馆",
+        "opening_hours": "周二至周日 9-17"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.9404783,
+          28.1603177
+        ]
+      },
+      "id": "node/10020233824"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10020233834",
+        "amenity": "police",
+        "name": "岳麓派出所麓枫社区警务室"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.9424314,
+          28.1606824
+        ]
+      },
+      "id": "node/10020233834"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13420404101",
+        "amenity": "toilets"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.9317252,
+          28.1836663
+        ]
+      },
+      "id": "node/13420404101"
+    }
+  ]
+}
