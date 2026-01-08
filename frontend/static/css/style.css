@@ -10,26 +10,23 @@ body, html { margin: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI',
     position: absolute; 
     top: 20px; 
     left: 20px; 
-    /* 1. 加宽侧边栏，防止列表拥挤 */
     width: 380px; 
     
-    /* 2. 设置不透明度 (0.9 表示 90% 不透明) + 磨砂玻璃效果 */
+    /* 保持原有的背景和圆角 */
     background: rgba(255, 255, 255, 0.92); 
-    backdrop-filter: blur(8px); /* 让背景模糊，提升文字可读性 */
-    -webkit-backdrop-filter: blur(8px); /* 兼容 Safari */
-    
-    padding: 15px; 
+    backdrop-filter: blur(8px); 
+    -webkit-backdrop-filter: blur(8px);
     border-radius: 8px; 
     box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
-    z-index: 1000; /* 保证在地图之上 */
+    z-index: 1000; 
     
-    /* 限制最大高度，防止撑出屏幕 */
-    max-height: 90vh;
-    display: flex;
-    flex-direction: column;
-
-    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    transform: translateX(0); /* 默认显示 */
+    max-height: 90vh;        /* 限制最大高度 */
+    height: auto;            /* 自动高度 */
+    display: flex;           /* 启用 Flex 布局 */
+    flex-direction: column;  /* 垂直排列 */
+    overflow: hidden;        /* 隐藏容器整体的滚动条，交给子元素滚动 */
+    padding: 15px;           /* 保持内边距 */
+    padding-bottom: 0;       /* 底部内边距设为0，让Footer贴底 */
 }
 
 /* 侧边栏折叠状态 */
@@ -315,12 +312,16 @@ body, html { margin: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI',
 
 /* 1. 底部容器：固定在侧边栏最下方，带有顶部边框 */
 .sidebar-footer {
-    margin-top: auto; /* 关键：自动顶到最下面 */
+    flex-shrink: 0;          /* 禁止被压缩，确保始终完整显示 */
+    margin-top: 0;           /* 不需要 auto 了，因为中间撑开了 */
     padding-top: 15px;
+    padding-bottom: 15px;    /* 底部留出空间 */
     border-top: 1px solid #e5e7eb;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    background: transparent; /* 或者设置背景色遮挡滚动内容 */
+    z-index: 2;
 }
 
 /* 2. 数据源状态标签 */
@@ -396,5 +397,49 @@ body, html { margin: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI',
 .interaction-tip i {
     color: #f59e0b; /* 灯泡图标用黄色 */
     margin-right: 4px;
+}
+/*#endregion */
+
+/*#region --- 选项卡内容区滚动条优化 --- */
+.tab-content {
+    display: none; /* 默认隐藏 (由JS控制显示) */
+    
+    /* 当显示时，flex: 1 让它占据 header 和 footer 剩下的所有空间 */
+    /* 注意：需要在JS切换Tab显示时，确保 active 的 tab-content 才有 flex: 1 */
+    /* 这里我们用通用样式，配合 .active */
+    overflow-y: auto;        /* 内容超长时，只在这一块显示滚动条 */
+    padding-right: 5px;      /* 防止滚动条遮挡内容 */
+    padding-bottom: 10px;    /* 底部留点空隙 */
+    margin-bottom: 0;        /* 去掉多余边距 */
+    min-height: 0;           /* Firefox Flex 滚动修复 */
+}
+
+/* 确保激活的 Tab 内容占满剩余空间 */
+.tab-content.active {
+    display: block;
+    flex: 1;                 /* 关键：撑开剩余高度 */
+}
+/*#endregion */
+
+/*#region --- 滚动条样式 --- */
+/* 滚动条整体 */
+.tab-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+/* 滚动条轨道 */
+.tab-content::-webkit-scrollbar-track {
+    background: transparent; 
+}
+
+/* 滚动条滑块 */
+.tab-content::-webkit-scrollbar-thumb {
+    background-color: #d1d5db; 
+    border-radius: 3px;
+}
+
+/* 滑块悬停 */
+.tab-content::-webkit-scrollbar-thumb:hover {
+    background-color: #9ca3af; 
 }
 /*#endregion */
