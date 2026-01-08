@@ -373,5 +373,21 @@
         }
     </script>
     <!--#endregion -->
+
+    <!-- 全局处理遮罩层 -->
+    <div id="process-overlay" class="modal-overlay" style="z-index: 9999; display: none; background: rgba(255,255,255,0.8); backdrop-filter: blur(5px);">
+        <div style="text-align: center;">
+            <div style="font-size: 40px; color: #3b82f6; margin-bottom: 20px;">
+                <i class="fa-solid fa-compass fa-spin"></i>
+            </div>
+            <h3 id="process-msg" style="color: #333; margin-bottom: 20px;">正在处理中...</h3>
+            
+            <!-- 终止按钮 -->
+            <button class="btn-del" onclick="terminateCurrentProcess()" style="padding: 10px 30px; font-size: 16px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);">
+                <i class="fa-solid fa-hand"></i> 立即终止
+            </button>
+        </div>
+    </div>
+
 </body>
 </html>

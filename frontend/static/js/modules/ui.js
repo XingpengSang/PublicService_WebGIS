@@ -3,6 +3,7 @@
 
 
 // frontend/static/js/modules/ui.js
+import { startProcess, endProcess } from './processMgr.js'; 
 import { state } from './state.js';
 import { API } from './api.js';
 import { clearAllAnalysis } from './analysis.js';
@@ -25,6 +26,7 @@ export function openUploadModal() {
     document.getElementById('uploadStatus').innerText=""; 
 }
 
+// 关闭上传模态框
 export function closeUploadModal() { 
     document.getElementById('uploadModal').style.display='none'; 
 }
@@ -52,41 +54,56 @@ function resetFrontendState() {
 // 提交上传
 export async function submitUpload() {
     const statusDiv = document.getElementById('uploadStatus'); 
-    statusDiv.innerText="上传中...";
+    closeUploadModal();
+    const signal = startProcess("正在上传并解析 GeoJSON 数据，文件较大请耐心等待...");
     const fd = new FormData();
     ['pois','roads','places','buildings','classification'].forEach(k => {
         const f = document.getElementById('file_'+(k==='classification'?'class':k)).files[0];
         if(f) fd.append(k, f);
     });
     try {
-        const res = await API.uploadData(fd);
+        const res = await API.uploadData(fd, signal);
         if(res.status==='success') {
             statusDiv.innerText="成功!"; 
             resetFrontendState(); 
             setTimeout(()=>{
-                closeUploadModal(); 
                 alert("数据已更新，请重新勾选图层查看。");
                 checkMissingClassifications(); // 重新检查
             },500);
-        } else statusDiv.innerText="失败: " + res.message;
-    } catch(e) { statusDiv.innerText="错误"; console.error(e); }
+        } else {
+            alert("上传失败: " + res.message);
+            // 如果失败，重新打开模态框显示错误
+            openUploadModal();
+            document.getElementById('uploadStatus').innerText = "失败: " + res.message;
+            document.getElementById('uploadStatus').style.color = "red";
+        }
+    } catch(e) { 
+        if (e.name !== 'AbortError') {
+            console.error(e);
+            alert("上传出错: " + e.message);
+            openUploadModal();
+        } 
+    } finally {
+        endProcess();
+    }
 }
 
 // 恢复默认
 export async function resetToDefaultData() {
     if(!confirm("确定恢复默认示例数据吗？")) return;
-    const btn = document.querySelector('button[onclick="resetToDefaultData()"]');
-    const oldText = btn.innerText;
-    btn.disabled = true; btn.innerText = "恢复中...";
+    closeUploadModal();
+    const signal = startProcess("正在从服务器重新加载默认数据，这可能需要几秒钟, 请耐心等待...");
     
     try { 
-        await API.resetData(); 
-        resetFrontendState(); 
-        closeUploadModal(); 
+        await API.resetData(signal); 
+        resetFrontendState();
         alert("已恢复默认数据"); 
         checkMissingClassifications(); // 重新检查
-    } catch(e){ alert("重置失败"); } 
-    finally { btn.disabled=false; btn.innerText = oldText; }
+    } catch(e){ 
+        if (e.name !== 'AbortError') alert("重置失败"); 
+    } finally { 
+        endProcess(); 
+    }
 }
 
 // --- 缺失分类检查逻辑 ---

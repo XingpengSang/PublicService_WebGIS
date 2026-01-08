@@ -1,6 +1,7 @@
 // frontend/static/js/modules/analysis.js
 // @FileDescription: 分析功能模块：服务区分析、盲区分析、居民点分析等
 
+import { startProcess, endProcess } from './processMgr.js';
 import { state } from './state.js';
 import { API } from './api.js';
 import { refreshMapHighlights, updatePoiListUI } from './layerManager.js';
@@ -88,8 +89,10 @@ export async function runNetworkAnalysis() {
     const btn = document.querySelector('button[onclick="runNetworkAnalysis()"]');
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 计算中...';
 
+    const signal = startProcess("正在进行路网拓扑计算，请稍候...");
+
     try {
-        const result = await API.analyzeService({ pois: targetPois, distance: distMeters });
+        const result = await API.analyzeService({ pois: targetPois, distance: distMeters }, signal);
         if (result.error) { alert("Error: " + result.error); return; }
         if (!result.geometry) { alert("分析结果为空"); return; }
 
@@ -101,8 +104,17 @@ export async function runNetworkAnalysis() {
         const div = document.getElementById('serviceResult');
         div.style.display = 'block';
         div.innerHTML = `<b>结果:</b> 覆盖建筑 <b>${result.building_count}</b> 栋, 面积 <b>${result.building_area_sqm}</b> m²`;
-    } catch(e) { console.error(e); }
-    finally { btn.innerHTML = '<i class="fa-solid fa-spider"></i> 开始路网分析'; }
+    } catch(e) { 
+        if (e.name === 'AbortError') {
+            console.log('Fetch aborted'); // 被用户取消了，不做任何事
+        } else {
+            console.error(e); alert("网络请求失败: " + e.message);
+        }
+    }
+    finally { 
+        btn.innerHTML = '<i class="fa-solid fa-spider"></i> 开始路网分析'; 
+        endProcess();
+    }
 }
 
 // --- C. 盲区分析 ---
@@ -110,16 +122,27 @@ export function startBlindSpotDraw() {
     if (!state.lastServiceGeoJSON) { alert("请先执行服务区分析！"); return; }
     alert("请绘制分析区域");
     new L.Draw.Polygon(state.map).enable();
+    
     state.map.once(L.Draw.Event.CREATED, async function(e) {
         state.drawLayer.addLayer(e.layer);
+        const signal = startProcess("正在计算覆盖盲区...");
+
         try {
-            const data = await API.analyzeBlind({ draw_geometry: e.layer.toGeoJSON().geometry, service_geometry: state.lastServiceGeoJSON });
+            const data = await API.analyzeBlind({ 
+                draw_geometry: e.layer.toGeoJSON().geometry, 
+                service_geometry: state.lastServiceGeoJSON 
+            }, signal); // 传入 signal
+
             if (data.geometry) {
                 const blindLayer = L.geoJSON(data.geometry, { interactive: false, style: { color: 'red', fillColor: 'red', fillOpacity: 0.6, weight: 1 } }).addTo(state.map);
                 state.analysisLayers.push(blindLayer);
                 state.drawLayer.clearLayers();
             } else { alert("无盲区"); }
-        } catch(err) {}
+        } catch(err) {
+            if (err.name !== 'AbortError') console.error(err);
+        } finally {
+            endProcess(); // 结束
+        }
     });
 }
 
@@ -141,7 +164,7 @@ function generatePlaceInfoHTML(name, dist, data) {
     return html;
 }
 
-// 主函数：激活居民点选择分析
+// 居民点分析
 export function activatePlaceSelect() {
     if (!document.getElementById('cb_places').checked) { alert("请先勾选 '显示居民点'"); return; }
     
@@ -173,10 +196,11 @@ export function activatePlaceSelect() {
             }
 
             // B. 未分析 -> 执行分析
-            layer.bindTooltip("分析中...", {permanent:true, direction:'top'}).openTooltip();
+            // layer.bindTooltip("分析中...", {permanent:true, direction:'top'}).openTooltip();
+            const signal = startProcess(`正在分析居民点 [${props.name}] 的设施配置...`);
             
             try {
-                const data = await API.analyzePlaceBuffer({ coord:[e.latlng.lng, e.latlng.lat], distance:dist });
+                const data = await API.analyzePlaceBuffer({ coord:[e.latlng.lng, e.latlng.lat], distance:dist }, signal);
                 
                 // 绘制圆 (interactive: false 保证鼠标穿透)
                 const circle = L.geoJSON(data.geometry, {
@@ -200,8 +224,12 @@ export function activatePlaceSelect() {
                 }).openTooltip();
 
             } catch(err) { 
-                console.error(err);
-                layer.bindTooltip("Error"); 
+                if (err.name !== 'AbortError') {
+                    console.error(err);
+                    layer.bindTooltip("分析失败").openTooltip();
+                }
+            } finally {
+                endProcess(); // 结束
             }
         });
     });

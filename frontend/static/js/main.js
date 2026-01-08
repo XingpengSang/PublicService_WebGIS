@@ -10,6 +10,7 @@ import * as Analysis from './modules/analysis.js';
 import * as Editor from './modules/editor.js';
 import * as Exporter from './modules/exporter.js';
 import * as UI from './modules/ui.js';
+import * as ProcessMgr from './modules/processMgr.js';
 
 // 1. 初始化地图
 const map = initMap();
@@ -26,6 +27,8 @@ if(listContainer) {
 }
 
 // 3. 挂载全局函数 (供 HTML onclick 调用)
+window.terminateCurrentProcess = ProcessMgr.terminateCurrentProcess;
+
 window.toggleCategory = LayerMgr.toggleCategory;
 window.handleDelete = LayerMgr.handleDelete;
 window.toggleLayer = LayerMgr.toggleLayer;
@@ -56,7 +59,7 @@ window.openUploadModal = UI.openUploadModal;
 window.closeUploadModal = UI.closeUploadModal;
 window.submitUpload = UI.submitUpload;
 window.resetToDefaultData = UI.resetToDefaultData;
-window.confirmClassification = UI.confirmClassification; // 👈 这里的引用修正了
+window.confirmClassification = UI.confirmClassification;
 
 // 4. 初始化路网监听器
 LayerMgr.initRoadListeners();

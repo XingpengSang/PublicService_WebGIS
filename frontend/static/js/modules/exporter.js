@@ -2,6 +2,7 @@
 // @FileDescription: 统计导出模块：截图、图表统计
 
 
+import { startProcess, endProcess } from './processMgr.js';
 import { state } from './state.js';
 import { API } from './api.js';
 
@@ -66,8 +67,9 @@ export async function showPlaceStats() {
     const btn = document.querySelector('button[onclick="showPlaceStats()"]');
     const oldText = btn.innerHTML; btn.innerHTML='计算中...'; btn.disabled=true;
 
+    const signal = startProcess(`正在批量分析所有居民点 (半径 ${dist}m)...`);
     try {
-        const data = await API.getPlaceStats({ distance: dist });
+        const data = await API.getPlaceStats({ distance: dist }, signal);
         const cats = Object.keys(data);
         if (cats.length === 0) { alert("无数据"); return; }
         
@@ -87,7 +89,12 @@ export async function showPlaceStats() {
                 { name:'缺失', type:'bar', stack:'t', data:missing, itemStyle:{color:'#ef4444'} }
             ]
         });
-    } catch(e) {} finally { btn.innerHTML=oldText; btn.disabled=false; }
+    } catch(e) { 
+        if (e.name !== 'AbortError') alert("分析失败"); 
+    } finally { 
+        btn.innerHTML=oldText; btn.disabled=false; 
+        endProcess(); 
+    }
 }
 
 // 导出当前图表数据为 CSV

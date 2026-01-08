@@ -12,6 +12,7 @@ export const state = {
     
     // 状态标记
     deletedIds: [],     // 已删除要素 ID
+    abortController: null, // 用于控制进程终止
     
     // 交互选择状态
     selectedIds: new Set(), // 当前选中的 POI ID 集合

@@ -7,34 +7,39 @@ const BASE = '/api';
 // 基础数据接口
 export const API = {
     // 基础数据
-    getPois: (cat) => fetch(`${BASE}/pois?category=${cat}`).then(r => r.json()),
-    getRoads: (type) => fetch(`${BASE}/roads?type=${type}`).then(r => r.json()),
-    getLayer: (name) => fetch(`${BASE}/${name}`).then(r => r.json()),
+    getPois: (cat, signal) => fetch(`${BASE}/pois?category=${cat}`, {signal}).then(r => r.json()),
+    getRoads: (type, signal) => fetch(`${BASE}/roads?type=${type}`, {signal}).then(r => r.json()),
+    getLayer: (name, signal) => fetch(`${BASE}/${name}`, {signal}).then(r => r.json()),
 
     // 分类管理
     checkMissing: () => fetch(`${BASE}/classification/missing`).then(r => r.json()),
-    updateClass: (data) => fetch(`${BASE}/classification/update`, {
-        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data)
+    updateClass: (data, signal) => fetch(`${BASE}/classification/update`, {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data),
+        signal: signal // 绑定信号
     }),
 
     // 空间分析
-    analyzeService: (data) => fetch(`${BASE}/analyze/service_area`, {
-        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data)
+    analyzeService: (data, signal) => fetch(`${BASE}/analyze/service_area`, {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data),
+        signal: signal // 绑定信号
     }).then(r => r.json()),
 
-    analyzeBlind: (data) => fetch(`${BASE}/analyze/blind_spot`, {
-        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data)
+    analyzeBlind: (data, signal) => fetch(`${BASE}/analyze/blind_spot`, {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data),
+        signal: signal // 绑定信号
     }).then(r => r.json()),
 
-    analyzePlaceBuffer: (data) => fetch(`${BASE}/analyze/place_buffer`, {
-        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data)
+    analyzePlaceBuffer: (data, signal) => fetch(`${BASE}/analyze/place_buffer`, {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data),
+        signal: signal // 绑定信号
     }).then(r => r.json()),
 
-    getPlaceStats: (data) => fetch(`${BASE}/stats/places_completeness`, {
-        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data)
+    getPlaceStats: (data, signal) => fetch(`${BASE}/stats/places_completeness`, {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data),
+        signal: signal // 绑定信号
     }).then(r => r.json()),
 
-    // 编辑 (CRUD)
+    // 编辑功能
     addFeature: (data) => fetch(`${BASE}/feature/add`, {
         method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data)
     }).then(r => r.json()),
@@ -43,7 +48,12 @@ export const API = {
         method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data)
     }).then(r => r.json()),
 
-    // 数据管理
-    resetData: () => fetch(`${BASE}/data/reset`, { method: 'POST' }).then(r => r.json()),
-    uploadData: (formData) => fetch(`${BASE}/data/upload`, { method: 'POST', body: formData }).then(r => r.json())
+    // 数据管理(上传/重置)
+    resetData: (signal) => fetch(`${BASE}/data/reset`, { 
+        method: 'POST', signal: signal  // 绑定信号
+    }).then(r => r.json()),
+
+    uploadData: (formData, signal) => fetch(`${BASE}/data/upload`, { 
+        method: 'POST', body: formData, signal: signal  // 绑定信号
+    }).then(r => r.json())
 };
