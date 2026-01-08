@@ -200,7 +200,11 @@ export function activatePlaceSelect() {
             const signal = startProcess(`正在分析居民点 [${props.name}] 的设施配置...`);
             
             try {
-                const data = await API.analyzePlaceBuffer({ coord:[e.latlng.lng, e.latlng.lat], distance:dist }, signal);
+                const data = await API.analyzePlaceBuffer({ 
+                    coord:[e.latlng.lng, e.latlng.lat], 
+                    distance:dist, 
+                    deleted_ids: state.deletedIds
+                }, signal);
                 
                 // 绘制圆 (interactive: false 保证鼠标穿透)
                 const circle = L.geoJSON(data.geometry, {

@@ -69,7 +69,7 @@ export async function showPlaceStats() {
 
     const signal = startProcess(`正在批量分析所有居民点 (半径 ${dist}m)...`);
     try {
-        const data = await API.getPlaceStats({ distance: dist }, signal);
+        const data = await API.getPlaceStats({ distance: dist, deleted_ids: state.deletedIds }, signal);
         const cats = Object.keys(data);
         if (cats.length === 0) { alert("无数据"); return; }
         

@@ -1,6 +1,7 @@
 # frontend/static/js/main.js
 # @FileDescription: 主入口文件：负责初始化、绑定事件、挂载全局函数
 
+from math import dist
 from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
 import json
@@ -219,6 +220,20 @@ def get_buildings():
     return jsonify({"type": "FeatureCollection", "features": BUILDINGS_DATA['features'][:limit]})
 
 # --- 空间分析接口 ---
+# 辅助函数：根据删除列表过滤有效 POI
+def get_active_pois(deleted_ids):
+    """根据前端传来的删除列表，过滤出有效的POI"""
+    if not deleted_ids:
+        return POIS_DATA['features']
+    
+    # 确保 ID 类型一致 (转字符串对比，防止 int/str 不匹配)
+    del_set = set(str(x) for x in deleted_ids)
+    
+    return [
+        f for f in POIS_DATA['features'] 
+        if str(f['properties'].get('osm_id')) not in del_set
+    ]
+
 @app.route('/api/analyze/service_area', methods=['POST'])
 def analyze_service_area():
     """计算设施服务区及覆盖建筑统计"""
@@ -264,16 +279,24 @@ def analyze_service_area():
 
 @app.route('/api/analyze/place_buffer', methods=['POST'])
 def analyze_place_buffer():
-    """计算居民点缓冲区内的设施类型覆盖情况"""
+    """分析居民点缓冲区内的设施类型覆盖情况"""
     try:
         req = request.json
         coord = req.get('coord')
         dist = float(req.get('distance', 1000))
+        deleted_ids = req.get('deleted_ids', []) 
+        
         buffer_geom = Point(coord[0], coord[1]).buffer(dist/111000.0)
         
         found_types = set()
-        for f in POIS_DATA['features']:
-            if buffer_geom.contains(shape(f['geometry'])):
+        
+        # 使用过滤后的数据进行遍历
+        active_features = get_active_pois(deleted_ids)
+        
+        for f in active_features:
+            # 必须转为 shape 才能做几何判断
+            p_geom = shape(f['geometry']) 
+            if buffer_geom.contains(p_geom):
                 found_types.add(CLASS_MAP.get(f['properties'].get('fclass'), '其他'))
         
         required = {'教育', '医疗', '商业', '文娱'}
@@ -391,6 +414,7 @@ def stats_places_completeness():
     try:
         # 获取距离阈值 (默认1000米)
         dist = float(request.json.get('distance', 1000))
+        deleted_ids = request.json.get('deleted_ids', [])
         buffer_deg = dist / 111000.0
         
         # 必要的类型

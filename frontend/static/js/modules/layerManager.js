@@ -22,8 +22,9 @@ export async function toggleCategory(cat) {
 export function renderPoiLayer(cat) {
     if (state.layers[cat]) state.map.removeLayer(state.layers[cat]);
     const data = state.pois[cat];
-    const active = data.features.filter(f => !state.deletedIds.includes(f.properties.osm_id));
-    
+    // 地图上只显示“未删除”的点
+    const active = state.pois[cat].features.filter(f => !state.deletedIds.includes(f.properties.osm_id));
+
     state.layers[cat] = L.geoJSON({type: "FeatureCollection", features: active}, {
         pointToLayer: (f, ll) => {
             const id = f.properties.osm_id;
@@ -64,15 +65,34 @@ export function updatePoiListUI() {
             hasData = true;
             state.pois[cat].features.forEach(f => {
                 const id = f.properties.osm_id;
-                if (state.deletedIds.includes(id)) return;
                 
-                state.currentVisibleIds.push(id);
-                const isSelected = state.selectedIds.has(id);
+                // 👇 1. 判断当前是否在删除列表中
+                const isDel = state.deletedIds.includes(id); 
+                
+                state.currentVisibleIds.push(id); // 依然计入可见列表(供Shift多选)，或者你可以决定是否排除
+                
+                const isSel = state.selectedIds.has(id);
                 const displayId = String(id).length > 8 ? '...'+String(id).slice(-6) : id;
                 
                 const row = document.createElement('div');
-                row.className = `poi-row ${isSelected ? 'selected' : ''}`;
-                row.innerHTML = `<div class="poi-cell">${idx++}</div><div class="poi-cell" title="${id}">${displayId}</div><div class="poi-cell"><span class="badge">${f.properties.fclass}</span></div><div class="poi-cell" title="${f.properties.name}">${f.properties.name||'-'}</div><div class="poi-cell"><button class="btn-xs ${state.deletedIds.includes(id)?'btn-restore':'btn-del'}" onclick="event.stopPropagation(); handleDelete('${cat}','${id}',false)">X</button></div>`;
+                // 👇 2. 加上 deleted 类名用于变灰/删除线
+                row.className = `poi-row ${isSel?'selected':''} ${isDel?'deleted':''}`;
+                
+                // 👇 3. 动态生成按钮逻辑
+                // 参数 ${isDel}：如果是 true，点击后执行恢复；如果是 false，执行删除
+                // 文本：isDel ? '恢复' : '删除'
+                row.innerHTML = `
+                    <div class="poi-cell">${idx++}</div>
+                    <div class="poi-cell" title="${id}">${displayId}</div>
+                    <div class="poi-cell"><span class="badge">${f.properties.fclass}</span></div>
+                    <div class="poi-cell" title="${f.properties.name}">${f.properties.name||'-'}</div>
+                    <div class="poi-cell">
+                        <button class="btn-xs ${isDel?'btn-restore':'btn-del'}" 
+                                onclick="event.stopPropagation(); handleDelete('${cat}','${id}', ${isDel})">
+                            ${isDel ? '恢复' : '删除'}
+                        </button>
+                    </div>
+                `;
                 
                 row.onclick = (e) => { e.stopPropagation(); handleRowClick(e, id); };
                 container.appendChild(row);
