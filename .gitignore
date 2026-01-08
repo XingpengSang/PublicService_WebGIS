@@ -1,0 +1,11 @@
+# .gitignore
+**/venv/
+__pycache__/
+*.pyc
+.DS_Store
+.vscode/
+frontend/static/lib/
+data/hunan-osm_roads_free.geojson
+data/hunan-osm_pois_free.geojson
+data/hunan-osm_buildings_a_free.geojson
+data/hunan-osm_places_free.geojson

@@ -9,7 +9,8 @@
       "properties": {
         "@id": "node/3133310982",
         "amenity": "clinic",
-        "name": "湖南大学医院天马保健所"
+        "name": "湖南大学医院天马保健所",
+        "type": "hospital"
       },
       "geometry": {
         "type": "Point",
@@ -135,7 +136,8 @@
         "amenity": "pharmacy",
         "dispensing": "yes",
         "healthcare": "pharmacy",
-        "name": "千金大药房"
+        "name": "千金大药房",
+        "type": "hospital"
       },
       "geometry": {
         "type": "Point",
@@ -152,7 +154,8 @@
         "@id": "node/5724482046",
         "amenity": "hospital",
         "healthcare": "hospital",
-        "name": "升华公寓医务室"
+        "name": "升华公寓医务室",
+        "type": "hospital"
       },
       "geometry": {
         "type": "Point",
@@ -169,7 +172,8 @@
         "@id": "node/6910885076",
         "leisure": "park",
         "name": "何润公园",
-        "operator": "何润"
+        "operator": "何润",
+        "type": "park"
       },
       "geometry": {
         "type": "Point",
@@ -189,7 +193,8 @@
         "healthcare": "pharmacy",
         "name": "养天和大药房",
         "name:en": "Tianhe Pharmacy",
-        "name:zh": "养天和大药房"
+        "name:zh": "养天和大药房",
+        "type": "hospital"
       },
       "geometry": {
         "type": "Point",
@@ -267,6 +272,30 @@
         ]
       },
       "id": "node/13420404101"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 1,
+        "name": "橘子洲头",
+        "type": "park"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [112.9643, 28.1672] 
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2,
+        "name": "湘雅医院",
+        "type": "hospital"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [112.9866, 28.2166]
+      }
     }
   ]
 }
