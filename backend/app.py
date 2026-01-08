@@ -311,15 +311,33 @@ def analyze_place_buffer():
 
 @app.route('/api/analyze/blind_spot', methods=['POST'])
 def analyze_blind_spot():
-    """计算绘制区域内的盲区 (未覆盖服务区部分)"""
     try:
         req = request.json
-        draw = shape(req.get('draw_geometry'))
-        service = shape(req.get('service_geometry'))
-        blind = draw.difference(service)
-        if blind.is_empty: return jsonify({"geometry": None})
-        return jsonify({"geometry": mapping(blind)})
-    except Exception as e: return jsonify({"error": str(e)}), 500
+        draw_geo = shape(req.get('draw_geometry'))    # 用户画的框 (分析范围)
+        service_geo = shape(req.get('service_geometry')) # 路网服务区 (细长的路网)
+
+        # 1. 定义“路边延伸距离” (Off-road access distance)
+        # 距离服务路网 access_distance(默认100米) 以内，都算作被覆盖，不是盲区。
+        # 填充路网之间的空隙，避免把街区内部误判为盲区。
+        access_distance_meters = float(req.get('access_distance', 100))
+        access_buffer_deg = access_distance_meters / 111000.0 # 转换距离 (度)
+        
+        # 2. 对路网服务区进行缓冲，模拟“实际服务覆盖面”
+        effective_service_area = service_geo.buffer(access_buffer_deg)
+
+        # 3. 计算差集: 盲区 = 用户画的框 - 实际服务覆盖面
+        blind_spot = draw_geo.difference(effective_service_area)
+
+        if blind_spot.is_empty:
+            return jsonify({"geometry": None, "message": "无盲区"})
+        
+        return jsonify({
+            "geometry": mapping(blind_spot)
+        })
+
+    except Exception as e:
+        print(f"Blind Spot Error: {e}")
+        return jsonify({"error": str(e)}), 500
 # endregion
 
 # region --- 5. 数据编辑接口 ---

@@ -120,28 +120,38 @@ export async function runNetworkAnalysis() {
 // --- C. 盲区分析 ---
 export function startBlindSpotDraw() {
     if (!state.lastServiceGeoJSON) { alert("请先执行服务区分析！"); return; }
+    
     alert("请绘制分析区域");
     new L.Draw.Polygon(state.map).enable();
     
     state.map.once(L.Draw.Event.CREATED, async function(e) {
         state.drawLayer.addLayer(e.layer);
+        
+        // 获取输入框的值
+        let accessDist = parseFloat(document.getElementById('blindSpotBuffer').value);
+        if (isNaN(accessDist) || accessDist < 0) {
+            accessDist = 100; // 默认值保底
+            document.getElementById('blindSpotBuffer').value = 100;
+        }
+        
         const signal = startProcess("正在计算覆盖盲区...");
 
         try {
             const data = await API.analyzeBlind({ 
                 draw_geometry: e.layer.toGeoJSON().geometry, 
-                service_geometry: state.lastServiceGeoJSON 
-            }, signal); // 传入 signal
+                service_geometry: state.lastServiceGeoJSON,
+                access_distance: accessDist
+            }, signal);
 
             if (data.geometry) {
                 const blindLayer = L.geoJSON(data.geometry, { interactive: false, style: { color: 'red', fillColor: 'red', fillOpacity: 0.6, weight: 1 } }).addTo(state.map);
                 state.analysisLayers.push(blindLayer);
                 state.drawLayer.clearLayers();
-            } else { alert("无盲区"); }
+            } else { alert("无盲区 (所有区域均在路网覆盖范围内)"); }
         } catch(err) {
             if (err.name !== 'AbortError') console.error(err);
         } finally {
-            endProcess(); // 结束
+            endProcess();
         }
     });
 }
@@ -193,7 +203,7 @@ export function activatePlaceSelect() {
                 }
                 return; // 🛑 立即结束，不执行下面的分析逻辑
             }
-            
+
             // 获取输入框的距离
             let rawVal = document.getElementById('placeBufferDist').value;
             let dist = parseFloat(rawVal);
