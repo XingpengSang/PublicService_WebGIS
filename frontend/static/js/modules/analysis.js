@@ -1,12 +1,11 @@
 // frontend/static/js/modules/analysis.js
-// @FileDescription: 空间分析模块：服务区、盲区、居民点缓冲区
-
+// @FileDescription: 分析功能模块：服务区分析、盲区分析、居民点分析等
 
 import { state } from './state.js';
 import { API } from './api.js';
 import { refreshMapHighlights, updatePoiListUI } from './layerManager.js';
 
-// 清除所有分析结果
+// --- 工具：一键清除 ---
 export function clearAllAnalysis() {
     state.analysisLayers.forEach(l => state.map.removeLayer(l));
     state.analysisLayers = [];
@@ -14,12 +13,27 @@ export function clearAllAnalysis() {
     if(state.userPoiSelection) { state.map.removeLayer(state.userPoiSelection); state.userPoiSelection=null; }
     document.getElementById('serviceResult').style.display = 'none';
     state.lastServiceGeoJSON = null;
+    
+    // 清除 POI 选中
     state.selectedIds.clear(); 
     refreshMapHighlights();
     updatePoiListUI();
+
+    // 清除居民点分析缓存 (如果有)
+    // 注意：这里是否清除居民点分析取决于需求，通常“清除所有”应该也包含这个
+    Object.values(state.placeAnalyses).forEach(item => state.map.removeLayer(item.layer));
+    state.placeAnalyses = {};
+    
+    // 恢复居民点图层的原始 Tooltip (如果有)
+    if(state.layers['places']) {
+        state.layers['places'].eachLayer(l => {
+            l.unbindTooltip();
+            l.bindTooltip(l.feature.properties.name, {direction:'top', offset:[0,-5]});
+        });
+    }
 }
 
-// 激活框选模式
+// --- A. 框选工具 ---
 export function activateBoxSelect() {
     alert("请在地图上绘制一个矩形，以框选特定的设施点");
     new L.Draw.Rectangle(state.map, { shapeOptions: { color: '#333', weight: 1, dashArray: '5, 5' } }).enable();
@@ -30,7 +44,7 @@ export function activateBoxSelect() {
     });
 }
 
-// 获取目标 POI 坐标列表
+// 辅助函数：获取当前选中的 POI 坐标列表
 function getTargetPois() {
     let coords = [];
     let box = state.userPoiSelection ? state.userPoiSelection.getBounds() : null;
@@ -40,7 +54,9 @@ function getTargetPois() {
             state.pois[cat].features.forEach(f => {
                 const id = f.properties.osm_id;
                 if (state.deletedIds.includes(id)) return;
+                // 逻辑：如果有选中，只分析选中；否则分析全部/框选
                 if (state.selectedIds.size > 0 && !state.selectedIds.has(id)) return;
+                
                 const lat = f.geometry.coordinates[1];
                 const lng = f.geometry.coordinates[0];
                 if (box) { if (box.contains([lat, lng])) coords.push([lng, lat]); } 
@@ -51,10 +67,9 @@ function getTargetPois() {
     return coords;
 }
 
-// 路网服务区分析
+// --- B. 服务区分析 ---
 export async function runNetworkAnalysis() {
-    // 这里的清除逻辑要小心，不要清除 POI 选中状态，否则无法分析选中点
-    // 我们只清除之前的图层
+    // 这里我们只清除旧的服务区分析，不清除居民点分析
     state.analysisLayers.forEach(l => state.map.removeLayer(l));
     state.analysisLayers = [];
     state.drawLayer.clearLayers();
@@ -90,7 +105,7 @@ export async function runNetworkAnalysis() {
     finally { btn.innerHTML = '<i class="fa-solid fa-spider"></i> 开始路网分析'; }
 }
 
-// 路网盲区分析
+// --- C. 盲区分析 ---
 export function startBlindSpotDraw() {
     if (!state.lastServiceGeoJSON) { alert("请先执行服务区分析！"); return; }
     alert("请绘制分析区域");
@@ -108,37 +123,86 @@ export function startBlindSpotDraw() {
     });
 }
 
-// 居民点缓冲区分析
+// --- D. 居民点缓冲区 (交互升级版) ---
+// 辅助函数：生成美观的 HTML 提示
+function generatePlaceInfoHTML(name, dist, data) {
+    let html = `<div style="text-align:left; min-width:150px;">`;
+    html += `<strong>🏠 ${name}</strong> <span style="font-size:10px; color:#666">(${dist}m)</span><hr style="margin:4px 0">`;
+    
+    if (data.is_complete) {
+        html += `<div style="color:#10b981; font-weight:bold;">✔ 服务设施完善</div>`;
+    } else {
+        html += `<div style="color:#ef4444; font-weight:bold;">✘ 设施缺失</div>`;
+        html += `<div style="font-size:11px; margin-top:2px;">缺: ${data.missing_types.join(', ')}</div>`;
+    }
+    
+    html += `<div style="font-size:10px; color:#888; margin-top:4px;">现有: ${data.found_types.join(', ') || '无'}</div>`;
+    html += `</div>`;
+    return html;
+}
+
+// 主函数：激活居民点选择分析
 export function activatePlaceSelect() {
     if (!document.getElementById('cb_places').checked) { alert("请先勾选 '显示居民点'"); return; }
-    alert("点击居民点分析，悬停查看结果");
+    
+    alert("【交互模式已激活】\n1. 点击居民点：生成/取消分析\n2. 鼠标悬停：查看已分析点的结果");
+    
     const placesLayer = state.layers['places'];
     if (!placesLayer) return;
 
     placesLayer.eachLayer(layer => {
-        layer.off('click'); layer.off('mouseover');
-        const props = layer.feature.properties; const id = props.osm_id;
+        layer.off('click'); 
+        layer.off('mouseover'); // 清除旧事件
+        
+        const props = layer.feature.properties; 
+        const id = props.osm_id;
         
         layer.on('click', async (e) => {
-            let dist = parseFloat(document.getElementById('placeBufferDist').value) || 1000;
+            // 获取输入框的距离
+            let rawVal = document.getElementById('placeBufferDist').value;
+            let dist = parseFloat(rawVal);
+            if (isNaN(dist) || dist <= 0) { dist = 1000; document.getElementById('placeBufferDist').value=1000; }
+
+            // A. 如果已分析 -> 清除
             if (state.placeAnalyses[id]) {
                 state.map.removeLayer(state.placeAnalyses[id].layer);
                 delete state.placeAnalyses[id];
-                layer.unbindTooltip(); layer.bindTooltip(props.name, {direction:'top', offset:[0,-5]});
+                layer.unbindTooltip(); 
+                layer.bindTooltip(props.name, {direction:'top', offset:[0,-5]});
                 return;
             }
-            layer.bindTooltip("分析中...", {permanent:true}).openTooltip();
+
+            // B. 未分析 -> 执行分析
+            layer.bindTooltip("分析中...", {permanent:true, direction:'top'}).openTooltip();
+            
             try {
-                const data = await API.analyzePlaceBuffer({coord:[e.latlng.lng, e.latlng.lat], distance:dist});
-                const circle = L.geoJSON(data.geometry, {interactive:false, style:{color:'#10b981', fillColor:'#10b981', fillOpacity:0.2}}).addTo(state.map);
+                const data = await API.analyzePlaceBuffer({ coord:[e.latlng.lng, e.latlng.lat], distance:dist });
                 
-                let html = `<b>${props.name}</b> (${dist}m)<hr style="margin:2px 0">`;
-                html += data.is_complete ? `<b style="color:green">✔ 完善</b>` : `<b style="color:red">✘ 缺: ${data.missing_types.join(',')}</b>`;
+                // 绘制圆 (interactive: false 保证鼠标穿透)
+                const circle = L.geoJSON(data.geometry, {
+                    interactive: false, 
+                    style: {color:'#10b981', fillColor:'#10b981', fillOpacity:0.2}
+                }).addTo(state.map);
                 
-                state.placeAnalyses[id] = { layer: circle, info: html };
+                // 生成 HTML
+                const infoHTML = generatePlaceInfoHTML(props.name, dist, data);
+                
+                // 存入状态
+                state.placeAnalyses[id] = { layer: circle, info: infoHTML };
+                
+                // 绑定新的 Tooltip (Leaflet 自动处理 hover)
                 layer.unbindTooltip(); 
-                layer.bindTooltip(html, {permanent:false, direction:'top', className:'place-tooltip'}).openTooltip();
-            } catch(err) { layer.bindTooltip("Error"); }
+                layer.bindTooltip(infoHTML, {
+                    permanent:false, 
+                    direction:'top', 
+                    className:'place-tooltip', // 需要 style.css 支持
+                    opacity: 1
+                }).openTooltip();
+
+            } catch(err) { 
+                console.error(err);
+                layer.bindTooltip("Error"); 
+            }
         });
     });
 }

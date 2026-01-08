@@ -231,14 +231,18 @@ body, html { margin: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI',
     padding: 0; /* 让内部 div 控制 padding */
 }
 
-.leaflet-tooltip-left:before {
+/* 修正 Leaflet 默认的小三角箭头颜色，使其匹配绿色边框 */
+.leaflet-tooltip-left.place-tooltip::before {
     border-left-color: #10b981;
 }
-.leaflet-tooltip-right:before {
+.leaflet-tooltip-right.place-tooltip::before {
     border-right-color: #10b981;
 }
-.leaflet-tooltip-top:before {
+.leaflet-tooltip-top.place-tooltip::before {
     border-top-color: #10b981;
+}
+.leaflet-tooltip-bottom.place-tooltip::before {
+    border-bottom-color: #10b981;
 }
 /*#endregion */
 
@@ -305,4 +309,63 @@ body, html { margin: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI',
 .form-row label { display: block; font-size: 12px; color: #666; margin-bottom: 2px; }
 .form-row input { width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;}
 .form-row input:disabled { background: #f9fafb; color: #999; }
+/*#endregion */
+
+/*#region --- 侧边栏底部数据控制区 --- */
+
+/* 1. 底部容器：固定在侧边栏最下方，带有顶部边框 */
+.sidebar-footer {
+    margin-top: auto; /* 关键：自动顶到最下面 */
+    padding-top: 15px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* 2. 数据源状态标签 */
+.data-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #6b7280;
+    background: #f3f4f6;
+    padding: 6px;
+    border-radius: 6px;
+}
+
+.data-status i {
+    color: #10b981; /* 绿色的小图标表示状态正常 */
+}
+
+/* 3. 美化后的导入按钮 */
+.btn-import-lg {
+    width: 100%;
+    padding: 10px 15px;
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); /* 渐变蓝紫色 */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+}
+
+.btn-import-lg:hover {
+    background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
+    transform: translateY(-1px); /* 悬停微微上浮 */
+    box-shadow: 0 6px 10px -1px rgba(79, 70, 229, 0.3);
+}
+
+.btn-import-lg:active {
+    transform: translateY(0);
+}
 /*#endregion */
