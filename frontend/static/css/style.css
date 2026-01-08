@@ -369,3 +369,32 @@ body, html { margin: 0; height: 100%; overflow: hidden; font-family: 'Segoe UI',
     transform: translateY(0);
 }
 /*#endregion */
+
+/*#region --- 列表行定位高亮 --- */
+@keyframes flash-highlight {
+    0% { background-color: #fde047; } /* 亮黄色 */
+    50% { background-color: #fef9c3; }
+    100% { background-color: transparent; }
+}
+
+.poi-row.flash-active {
+    animation: flash-highlight 4s ease-out;
+}
+
+/* 列表下方的交互提示样式 */
+.interaction-tip {
+    font-size: 11px;
+    color: #6b7280; /* 灰色文字 */
+    background-color: #f3f4f6; /* 浅灰背景 */
+    padding: 8px;
+    border-radius: 6px;
+    margin-top: 8px;
+    border: 1px dashed #d1d5db;
+    line-height: 1.5;
+}
+
+.interaction-tip i {
+    color: #f59e0b; /* 灯泡图标用黄色 */
+    margin-right: 4px;
+}
+/*#endregion */
