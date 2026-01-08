@@ -181,6 +181,19 @@ export function activatePlaceSelect() {
         const id = props.osm_id;
         
         layer.on('click', async (e) => {
+            // 必须在这里重新拦截，因为之前的拦截逻辑被 layer.off('click') 删掉了
+            if (state.editMode && (state.editMode.mode === 'info' || state.editMode.mode === 'edit')) {
+                if (e.originalEvent) {
+                    e.originalEvent.stopPropagation();
+                    e.originalEvent.preventDefault();
+                }
+                // 调用全局挂载的打开表单函数
+                if (window.openFeatureForm) {
+                    window.openFeatureForm(layer.feature, 'places');
+                }
+                return; // 🛑 立即结束，不执行下面的分析逻辑
+            }
+            
             // 获取输入框的距离
             let rawVal = document.getElementById('placeBufferDist').value;
             let dist = parseFloat(rawVal);
