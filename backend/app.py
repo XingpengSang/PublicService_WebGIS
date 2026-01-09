@@ -1,26 +1,47 @@
 # frontend/static/js/main.js
 # @FileDescription: 主入口文件：负责初始化、绑定事件、挂载全局函数
 
-from math import dist
+import sys
+import os
+import webbrowser
+from threading import Timer
 from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
 import json
-import os
 import mimetypes
 from shapely.geometry import shape, mapping, Point
 from shapely.ops import unary_union
 
+# 解决 Windows JS MIME 问题
 mimetypes.add_type('application/javascript', '.js')
 
-# 设置路径
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TEMPLATE_DIR = os.path.join(BASE_DIR, '../frontend/templates')
-STATIC_DIR = os.path.join(BASE_DIR, '../frontend/static')
-DATA_DIR = os.path.join(BASE_DIR, '../data')
+# 核心路径配置 (打包适配)
+if getattr(sys, 'frozen', False):
+    # 【打包模式 (Frozen/EXE)】
+    # 1. 内部资源 (前端代码)：解压在临时目录 sys._MEIPASS 中
+    BUNDLE_DIR = sys._MEIPASS
+    TEMPLATE_DIR = os.path.join(BUNDLE_DIR, 'frontend', 'templates')
+    STATIC_DIR = os.path.join(BUNDLE_DIR, 'frontend', 'static')
+    
+    # 2. 外部资源 (数据文件)：位于 EXE 同级目录
+    # sys.executable 是 .exe 文件的绝对路径
+    EXEC_DIR = os.path.dirname(sys.executable)
+    DATA_DIR = os.path.join(EXEC_DIR, 'data')
+else:
+    # 【源码开发模式】
+    # 基于当前文件位置寻找
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__)) # backend/
+    PROJECT_ROOT = os.path.dirname(BASE_DIR)            # 项目根目录/
+    
+    TEMPLATE_DIR = os.path.join(PROJECT_ROOT, 'frontend', 'templates')
+    STATIC_DIR = os.path.join(PROJECT_ROOT, 'frontend', 'static')
+    DATA_DIR = os.path.join(PROJECT_ROOT, 'data')
+
+# 配置文件路径
 CLASS_FILE_PATH = os.path.join(DATA_DIR, 'classification.txt')
 
 app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
-# 增加最大上传限制 (例如 100MB)，防止大文件上传报错
+# 限制上传大小
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024 
 CORS(app)
 
@@ -486,5 +507,18 @@ def stats_places_completeness():
         return jsonify({"error": str(e)}), 500
 # endregion
 
+# 启动逻辑 (自动打开浏览器) 
+def open_browser():
+    # 自动打开默认浏览器
+    webbrowser.open_new('http://127.0.0.1:5000/')
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    # 如果是打包模式，关闭 Debug，自动弹窗
+    if getattr(sys, 'frozen', False):
+        print("正在启动城市公共设施服务分析系统...")
+        print(f"数据目录: {DATA_DIR}")
+        Timer(1.5, open_browser).start()
+        app.run(debug=False, port=5000)
+    else:
+        # 开发模式
+        app.run(debug=True, port=5000)
