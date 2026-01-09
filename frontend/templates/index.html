@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>城市公共设施服务分析系统</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style>
+        .cat-edu { color: #3b82f6; } .cat-med { color: #15f911; } 
+        .cat-ent { color: #ec4899; } .cat-com { color: #f59e0b; } .cat-oth { color: #6b7280; } 
+        
+        .tabs { display: flex; margin-bottom: 10px; border-bottom: 2px solid #ddd; }
+        .tab { flex: 1; text-align: center; padding: 8px; cursor: pointer; font-weight: bold; color: #666; }
+        .tab.active { color: #3b82f6; border-bottom: 2px solid #3b82f6; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .analysis-step { border-left: 3px solid #ddd; padding-left: 10px; margin-bottom: 15px; }
+        .step-active { border-left-color: #3b82f6; }
+        .small-tip { font-size: 11px; color: #888; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <!-- 1. 鼠标坐标状态栏 -->
+    <div id="mouse-coords" class="mouse-coords-box">
+        Lat: 0.00000, Lon: 0.00000
+    </div>
+
+    <!-- 2. 右上角编辑工具栏 -->
+    <div class="edit-toolbar">
+        <button class="tool-btn" id="btnToolInfo" title="查看要素属性" onclick="setEditMode('info')">
+            <i class="fa-solid fa-circle-info"></i>
+        </button>
+        <button class="tool-btn" id="btnToolAdd" title="新增要素" onclick="openAddModal()">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+        <button class="tool-btn" id="btnToolEdit" title="修改要素 (属性/几何)" onclick="setEditMode('edit')">
+            <i class="fa-solid fa-pen-to-square"></i>
+        </button>
+        <div id="editModeTip" class="mode-tip" style="display:none;">当前模式: 查看</div>
+    </div>
+
+    <!-- 新增要素 - 图层选择模态框 -->
+    <div id="layerSelectModal" class="modal-overlay" style="z-index: 3000;">
+        <div class="modal-box" style="width: 300px;">
+            <div class="modal-header">选择要新增的图层类型 <button onclick="closeLayerModal()" style="float:right;">&times;</button></div>
+            <div class="modal-body">
+                <button class="btn-primary w-100 mb-2" onclick="startDrawNew('pois', 'Point')">POI 设施点 (点)</button>
+                <button class="btn-primary w-100 mb-2" onclick="startDrawNew('places', 'Point')">居民点 (点)</button>
+                <button class="btn-primary w-100 mb-2" onclick="startDrawNew('roads', 'LineString')">道路 (线)</button>
+                <button class="btn-primary w-100 mb-2" onclick="startDrawNew('buildings', 'Polygon')">建筑物 (面)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 属性编辑/查看模态框 -->
+    <div id="featureFormModal" class="modal-overlay" style="z-index: 3001;">
+        <div class="modal-box" style="width: 400px; max-height: 90vh; display:flex; flex-direction:column;">
+            <div class="modal-header">
+                <span id="formTitle">要素属性</span>
+                <button onclick="closeFormModal()" style="float:right;">&times;</button>
+            </div>
+            <div class="modal-body" style="overflow-y:auto; flex:1;">
+                <div id="formContainer"></div>
+                <!-- 几何编辑提示 -->
+                <div id="geomEditSection" style="margin-top:15px; border-top:1px solid #eee; padding-top:10px; display:none;">
+                    <label>几何形状:</label>
+                    <button class="btn-warning w-100" onclick="redrawGeometry()">
+                        <i class="fa-solid fa-draw-polygon"></i> 重绘几何形状
+                    </button>
+                    <p class="small text-muted mt-1">点击后窗口将隐藏，请在地图上绘制新形状。</p>
+                </div>
+            </div>
+            <div class="modal-footer" id="formFooter">
+                <button class="btn-primary" onclick="submitFeatureForm()">保存提交</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 侧边栏 -->
+    <div class="sidebar" id="mainSidebar">
+        
+        <!-- 折叠/展开按钮 -->
+        <div class="sidebar-toggle-btn" onclick="toggleSidebar()" title="折叠/展开侧边栏">
+            <i class="fa-solid fa-chevron-left" id="sidebarToggleIcon"></i>
+        </div>
+
+        <!-- 侧边栏内容 -->
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('data')">数据管理</div>
+            <div class="tab" onclick="switchTab('analysis')">空间分析</div>
+            <div class="tab" onclick="switchTab('export')">结果输出</div>
+        </div>
+
+        <!-- Tab 1: 数据管理 -->
+        <div id="tab-data" class="tab-content active">
+            <div class="panel-section">
+                <h3><i class="fa-solid fa-layer-group"></i> 设施服务类型</h3>
+                <div class="d-flex" style="flex-wrap:wrap; gap:10px;">
+                    <div><input type="checkbox" id="cb_教育" onchange="toggleCategory('教育')"> <span class="cat-edu">教育</span></div>
+                    <div><input type="checkbox" id="cb_医疗" onchange="toggleCategory('医疗')"> <span class="cat-med">医疗</span></div>
+                    <div><input type="checkbox" id="cb_文娱" onchange="toggleCategory('文娱')"> <span class="cat-ent">文娱</span></div>
+                    <div><input type="checkbox" id="cb_商业" onchange="toggleCategory('商业')"> <span class="cat-com">商业</span></div>
+                    <div><input type="checkbox" id="cb_其他" onchange="toggleCategory('其他')"> <span class="cat-oth">其他</span></div>
+                </div>
+                <div style="margin-top:10px;">
+                    <div class="poi-header">
+                        <div>#</div><div>ID</div><div>类型</div><div>名称</div><div>D/R</div>
+                    </div>
+                    <div id="poiListContainer" class="poi-list">
+                        <div style="text-align:center; padding:10px; color:#999;">请勾选上方类型</div>
+                    </div>
+                    <!-- 👇👇👇 新增：交互操作提示 👇👇👇 -->
+                    <div class="interaction-tip">
+                        <i class="fa-regular fa-lightbulb"></i> <b>交互提示：</b><br>
+                        • <b>单击</b>列表行数据 &rarr; 地图点高亮显示<br>
+                        • <b>双击</b>地图POI点 &rarr; 列表自动定位并闪烁
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <div class="panel-section">
+                <h3><i class="fa-solid fa-road"></i> 路网分级加载</h3>
+                <div class="road-controls">
+                    <div>
+                        <input type="checkbox" class="road-checkbox" value="motorway" id="r1"> 
+                        <label for="r1" style="color:#d946ef">高速公路 Motorway</label></div>
+                    <div>
+                        <input type="checkbox" class="road-checkbox" value="trunk" id="r2"> 
+                        <label for="r2" style="color:#f97316">干线公路 Trunk</label></div>
+                    <div>
+                        <input type="checkbox" class="road-checkbox" value="primary" id="r3"> 
+                        <label for="r3" style="color:#eab308">主要道路 Primary</label></div>
+                    <div>
+                        <input type="checkbox" class="road-checkbox" value="secondary" id="r4"> 
+                        <label for="r4" style="color:#3b82f6">次要道路 Secondary</label></div>
+                    <div>
+                        <input type="checkbox" class="road-checkbox" value="residential" id="r_res"> 
+                        <label for="r_res" style="color:#8b5cf6">社区道路 Residential</label></div>
+                    <div>
+                        <input type="checkbox" class="road-checkbox" value="other" id="r_oth"> 
+                        <label for="r_oth" style="color:#9ca3af">其他道路 (加载较慢)</label></div>
+                </div>
+            </div>
+            <hr>
+            <div class="panel-section">
+                <h3><i class="fa-solid fa-map"></i> 其他基础数据</h3>
+                <div><input type="checkbox" id="cb_places" onchange="toggleLayer('places')"> 居民点 (Places)</div>
+                <div><input type="checkbox" id="cb_buildings" onchange="toggleLayer('buildings')"> 建筑物 (Buildings)</div>
+            </div>
+        </div>
+
+        <!-- Tab 2: 空间分析 -->
+        <div id="tab-analysis" class="tab-content">
+            
+            <!-- 1. 服务区分析 -->
+            <div class="panel-box analysis-step step-active">
+                <h3>1. 服务区分析 (基于路网)</h3>
+                <div class="small-tip">第一步：选择POI点</div>
+                <button class="btn-secondary" style="width:100%; margin-bottom:5px;" onclick="activateBoxSelect()">
+                    <i class="fa-regular fa-square-check"></i> 框选特定的POI (可选)
+                </button>
+                <div id="selection-status" style="font-size:11px; color:green; display:none; margin-bottom:5px;">已框选区域</div>
+
+                <div class="small-tip">第二步：设置阈值</div>
+                <div class="d-flex" style="gap:5px; margin-bottom:5px;">
+                    <input type="number" id="thresholdVal" class="form-control" value="10" style="width:60px">
+                    <select id="thresholdUnit" class="form-control">
+                        <option value="min">分钟 (步行)</option>
+                        <option value="meter">米</option>
+                    </select>
+                </div>
+
+                <button class="btn-primary" style="width:100%" onclick="runNetworkAnalysis()">
+                    <i class="fa-solid fa-spider"></i> 开始路网分析
+                </button>
+                
+                <div id="serviceResult" class="result-box" style="display:none; margin-top:5px;"></div>
+            </div>
+
+            <!-- 2. 盲区分析 -->
+            <div class="panel-box analysis-step">
+                <h3>2. 覆盖盲区分析</h3>
+                <div class="small-tip">需先完成服务区分析</div>
+                <!-- 路边延伸距离输入框 -->
+                <div class="d-flex" style="gap:5px; margin-bottom:10px; align-items: center;">
+                    <label style="font-size:12px; white-space:nowrap;" title="距离路网多少米内视为已覆盖">路边延伸:</label>
+                    <input type="number" id="blindSpotBuffer" class="form-control" value="100" min="0" step="10" style="text-align:right;">
+                    <span style="font-size:12px;">米</span>
+                </div>
+                <button class="btn-warning" style="width:100%" onclick="startBlindSpotDraw()">
+                    <i class="fa-solid fa-pen-to-square"></i> 绘制区域并计算盲区
+                </button>
+            </div>
+
+            <hr>
+
+            <!-- 3. 居民点缓冲区 -->
+            <div class="panel-box analysis-step">
+                <h3>3. 居民点覆盖完善度</h3>
+                <div class="small-tip">需先在数据管理中勾选显示 Places</div> 
+
+                <div class="d-flex" style="gap:5px; margin-bottom:5px; align-items: center;">
+                    <label style="font-size:12px; white-space:nowrap;">缓冲距离:</label>
+                    <input type="number" id="placeBufferDist" class="form-control" value="1000" min="100" step="100" style="text-align:right;">
+                    <span style="font-size:12px;">米</span>
+                </div>
+
+                <button class="btn-secondary" style="width:100%" onclick="activatePlaceSelect()">
+                    <i class="fa-solid fa-hand-pointer"></i> 点击地图选择居民点
+                </button>
+            </div>
+            
+            <button class="btn-del" style="width:100%; margin-top:20px;" onclick="clearAllAnalysis()">
+                <i class="fa-solid fa-trash"></i> 清除所有分析结果
+            </button>
+        </div>
+
+        <!-- Tab 3: 结果输出 -->
+        <div id="tab-export" class="tab-content">
+            
+            <!-- A. 地图导出 -->
+            <div class="panel-box">
+                <h6>1. 地图视图导出</h6>
+                <p class="small text-muted">将当前地图视图(包含所有图层)保存为图片。</p>
+                <button class="btn-primary" style="width:100%" onclick="exportMapImage()">
+                    <i class="fa-solid fa-camera"></i> 导出为 PNG 图片
+                </button>
+            </div>
+            
+            <hr>
+
+            <!-- B. POI 统计 -->
+            <div class="panel-box">
+                <h6>2. 设施数量统计 (POI)</h6>
+                <p class="small text-muted">统计当前已筛选加载的各类设施数量。</p>
+                <button class="btn-secondary" style="width:100%" onclick="showPoiStats()">
+                    <i class="fa-solid fa-chart-pie"></i> 生成统计图表
+                </button>
+            </div>
+
+            <hr>
+
+            <!-- C. 居民点完善度统计 -->
+            <div class="panel-box">
+                <h6>3. 居民点服务完善度</h6>
+                <div class="d-flex" style="gap:5px; margin-bottom:5px; align-items: center;">
+                    <label style="font-size:12px;">统计半径:</label>
+                    <input type="number" id="statsBufferDist" class="form-control" value="1000" step="100">
+                    <span style="font-size:12px;">米</span>
+                </div>
+                <button class="btn-secondary" style="width:100%" onclick="showPlaceStats()">
+                    <i class="fa-solid fa-chart-bar"></i> 执行批量统计
+                </button>
+            </div>
+
+        </div>
+
+        <!-- 4. 数据导入入口 -->
+        <hr>
+        <div class="sidebar-footer">
+            
+            <!-- 状态显示条 -->
+            <div class="data-status">
+                <i class="fa-solid fa-database"></i>
+                <span id="dataSourceTag">当前数据源: 默认示例</span>
+            </div>
+
+            <!-- 大号导入按钮 -->
+            <button class="btn-import-lg" onclick="openUploadModal()">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>导入 / 管理数据</span>
+            </button>
+            
+        </div>
+    </div>
+
+    <!-- 图表展示模态框 -->
+    <div id="chartModal" class="modal-overlay" style="z-index: 4000;">
+        <div class="modal-box" style="width: 700px; max-height: 90vh;">
+            <div class="modal-header">
+                <span id="chartTitle">统计结果</span>
+                <button onclick="document.getElementById('chartModal').style.display='none'" style="float:right;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- 图表容器 -->
+                <div id="echartsContainer" style="width: 100%; height: 400px;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="exportCurrentChartData()">
+                    <i class="fa-solid fa-file-csv"></i> 导出表格 (CSV)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 缺失分类模态框 -->
+    <div id="missingClassModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">发现未分类的 fclass 标签</div>
+            <div class="modal-body" id="missingModalBody">
+                <p>检测到数据中存在 classification.txt 未定义的类型，请手动归类：</p>
+                <div id="currentMissingItem" class="missing-item">Loading...</div>
+                <label>归属到设施服务类型：</label>
+                <select id="missingSelect" class="form-control">
+                    <option value="教育">教育</option>
+                    <option value="医疗">医疗</option>
+                    <option value="文娱">文娱</option>
+                    <option value="商业">商业</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+            <div class="modal-footer"><button class="btn-primary" onclick="confirmClassification()">确认并添加</button></div>
+        </div>
+    </div>
+
+    <!-- 数据上传模态框 -->
+    <div id="uploadModal" class="modal-overlay">
+        <div class="modal-box" style="width: 500px;">
+            <div class="modal-header">
+                导入自定义 GeoJSON 数据
+                <button onclick="closeUploadModal()" style="float:right; border:none; background:none; font-size:18px; cursor:pointer;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-muted">请上传 WGS84 坐标系（EPSG:4326）的 GeoJSON 文件。未上传的文件将保留为空或使用旧数据(不建议混合使用)。</p>
+                
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label>1. POI 数据 (hunan-osm_pois):</label>
+                    <input type="file" id="file_pois" accept=".geojson,.json" class="form-control">
+                </div>
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label>2. 路网数据 (hunan-osm_roads):</label>
+                    <input type="file" id="file_roads" accept=".geojson,.json" class="form-control">
+                </div>
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label>3. 居民点数据 (hunan-osm_places):</label>
+                    <input type="file" id="file_places" accept=".geojson,.json" class="form-control">
+                </div>
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label>4. 建筑物数据 (hunan-osm_buildings):</label>
+                    <input type="file" id="file_buildings" accept=".geojson,.json" class="form-control">
+                </div>
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label>5. 分类配置 (classification.txt):</label>
+                    <input type="file" id="file_class" accept=".txt" class="form-control">
+                </div>
+
+                <div id="uploadStatus" style="margin-top:10px; font-weight:bold;"></div>
+            </div>
+            <div class="modal-footer" style="display:flex; justify-content:space-between;">
+                <button class="btn-del" onclick="resetToDefaultData()">恢复默认数据</button>
+                <button class="btn-primary" onclick="submitUpload()">上传并应用</button>
+            </div>
+        </div>
+    </div>
+
+    <!--#region 导入js库 -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+    <script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
+    <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+    </script>
+    <!--#endregion -->
+
+    <!-- 全局处理遮罩层 -->
+    <div id="process-overlay" class="modal-overlay" style="z-index: 9999; display: none; background: rgba(255,255,255,0.8); backdrop-filter: blur(5px);">
+        <div style="text-align: center;">
+            <div style="font-size: 40px; color: #3b82f6; margin-bottom: 20px;">
+                <i class="fa-solid fa-compass fa-spin"></i>
+            </div>
+            <h3 id="process-msg" style="color: #333; margin-bottom: 20px;">正在处理中...</h3>
+            
+            <!-- 终止按钮 -->
+            <button class="btn-del" onclick="terminateCurrentProcess()" style="padding: 10px 30px; font-size: 16px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);">
+                <i class="fa-solid fa-hand"></i> 立即终止
+            </button>
+        </div>
+    </div>
+
+</body>
+</html>
