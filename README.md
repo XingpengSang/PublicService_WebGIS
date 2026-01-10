@@ -156,3 +156,114 @@ PublicService_WebGIS/
 
 ### 4. 导出结果
 切换到 “结果输出” 标签页，可导出高清地图截图或统计报表。
+
+
+# 🐳 Docker 部署指南
+
+本分支项目代码支持基于 Docker 的容器化部署，开发者可尝试进行 **本地无服务器部署 (内网穿透)** 和 **云服务器部署** 两种方案。
+
+## 📋 前置准备
+
+无论采用哪种方式，请先确保满足以下条件：
+
+1.  **安装 Docker**:
+    *   Windows/Mac: 安装 [Docker Desktop](https://www.docker.com/products/docker-desktop/)。
+    *   Linux Server: 安装 Docker Engine 和 Docker Compose。
+2.  **获取完整数据 (关键)**:
+    *   由于 GitHub 文件限制，仓库源码中默认**不包含** `*.geojson` 等数据。
+    *   请确保将完整的数据文件放入项目的 `data/` 目录中，否则服务无法启动。
+
+---
+
+## 方案一：本地部署 (无云服务器 / 演示环境)
+
+> **适用场景**：课程答辩、本地开发、演示给他人查看（配合内网穿透）。
+
+### 1. 启动容器
+在项目根目录下打开终端 (PowerShell/CMD/Terminal)，执行：
+
+``` Bash
+# 构建并启动服务
+docker compose up
+```
+
+首次启动需要构建镜像并进行几何预处理，耗时约 1-2 分钟，请耐心等待直到出现如下日志。
+
+``` text
+--- 正在加载默认示例数据 ---
+正在重新处理几何数据...
+几何处理完成: 路网 202407 条, 建筑 128150 栋
+```
+
+### 2. 本地访问
+
+打开浏览器访问：[http://localhost:8081](https://www.google.com/url?sa=E&q=http%3A%2F%2Flocalhost%3A8081)
+
+### 3. 公网访问 (内网穿透)
+
+如果需要让老师或异地同学访问你的本地服务，推荐使用 **cpolar**：
+
+1. 下载并安装 [cpolar](https://www.google.com/url?sa=E&q=https%3A%2F%2Fwww.cpolar.com%2F)。
+    
+2. 新建一个终端窗口，执行：
+    
+``` Bash
+cpolar http 8081
+```
+    
+3. 复制生成的链接 (如 https://xxxx.r3.cpolar.cn) 发送给他人即可。
+    
+    - ⚠️ **注意**：演示期间请保持 Docker 和 cpolar 窗口均处于开启状态，且电脑不能休眠。
+        
+
+---
+
+## 方案二：云端部署 (生产环境)
+
+> **适用场景**：拥有阿里云/腾讯云/华为云等服务器 (Linux)，需要长期稳定运行。
+
+### 1. 环境安装 (Ubuntu示例)
+
+``` Bash
+# 安装 Docker
+curl -fsSL https://get.docker.com | bash
+```
+
+### 2. 获取代码
+
+``` Bash
+git clone -b deploy/docker <你的仓库地址>
+cd PublicService_WebGIS
+```
+
+### 3. 上传大文件数据
+
+由于路网数据不在 Git 中，需从你的本地电脑上传到服务器：
+
+``` Bash
+# 在你本地电脑的终端执行 (替换为你的服务器IP)
+scp ./data/hunan-osm_roads_free.geojson root@ServerIP:/root/PublicService_WebGIS/data/
+```
+
+### 4. 后台启动服务
+
+``` Bash
+# -d 表示在后台运行 (Detached mode)
+docker compose up -d --build
+```
+
+### 5. 访问
+
+在浏览器输入服务器 IP：http://<服务器IP>:8081  
+(注：请确保云服务器的安全组/防火墙已放行 8081 端口)
+
+---
+
+## 🛠️ 常用维护命令
+
+| 操作        | 命令                        | 说明          |
+| --------- | ------------------------- | ----------- |
+| **停止服务**  | Ctrl + C                  | 仅停止，保留容器状态  |
+| **停止并删除** | docker compose down       | 彻底清理容器和网络   |
+| **查看日志**  | docker compose logs -f    | 实时查看后端报错或输出 |
+| **强制重构**  | docker compose up --build | 代码修改后需执行此命令 |

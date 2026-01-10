@@ -1,0 +1,14 @@
+services:
+  webgis:
+    build: .
+    container_name: urban_webgis
+    restart: always
+    ports:
+      - "8081:5000"  # 将服务器的 8081 端口映射到容器的 5000 端口
+    volumes:
+      # 🔥 关键：把服务器上的 data 文件夹挂载进去
+      # 这样你不需要把 150MB 的数据打包进镜像，且更新数据只需替换服务器文件
+      - ./data:/app/data
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1 # 强制实时输出日志

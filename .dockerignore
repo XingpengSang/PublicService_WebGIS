@@ -1,0 +1,22 @@
+# .dockerignore
+
+# 忽略虚拟环境 (Docker 会自己创建环境，不需要本地的)
+venv/
+.venv/
+env/
+
+# 忽略数据文件夹 (我们在 docker-compose.yml 里用 volumes 挂载，不需要打包进镜像)
+data/
+
+# 忽略 Git 历史
+.git/
+.gitignore
+
+# 忽略缓存和临时文件
+__pycache__/
+*.pyc
+.DS_Store
+.vscode/
+dist/
+build/
+*.spec
